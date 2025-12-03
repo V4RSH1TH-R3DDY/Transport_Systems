@@ -64,22 +64,29 @@ class TrafficDataset(Dataset):
     
     def _load_graphs(self):
         """Load multi-view graph adjacency matrices"""
-        prefix = '' if self.use_demo_graphs else 'real_'
+        # Use dataset-specific filenames for demo graphs
+        if self.use_demo_graphs:
+            graph_files = {
+                'physical': self.graph_dir / f'{self.dataset_name}_A_physical.npy',
+                'proximity': self.graph_dir / f'{self.dataset_name}_A_proximity.npy',
+                'correlation': self.graph_dir / f'{self.dataset_name}_A_correlation.npy'
+            }
+        else:
+            # Real graphs use 'real_' prefix
+            graph_files = {
+                'physical': self.graph_dir / 'real_A_physical.npy',
+                'proximity': self.graph_dir / 'real_A_proximity.npy',
+                'correlation': self.graph_dir / 'real_A_correlation.npy'
+            }
         
-        graph_files = {
-            'physical': self.graph_dir / f'{prefix}A_physical.npy',
-            'proximity': self.graph_dir / f'{prefix}A_proximity.npy',
-            'correlation': self.graph_dir / f'{prefix}A_correlation.npy'
-        }
-        
-        # Try demo graphs first
+        # Fallback to demo graphs if real graphs not found
         if not all(f.exists() for f in graph_files.values()) and not self.use_demo_graphs:
             print(f"⚠️  Real graphs not found, falling back to demo graphs...")
             self.use_demo_graphs = True
             graph_files = {
-                'physical': self.graph_dir / 'metr-la_A_physical.npy',
-                'proximity': self.graph_dir / 'metr-la_A_proximity.npy',
-                'correlation': self.graph_dir / 'metr-la_A_correlation.npy'
+                'physical': self.graph_dir / f'{self.dataset_name}_A_physical.npy',
+                'proximity': self.graph_dir / f'{self.dataset_name}_A_proximity.npy',
+                'correlation': self.graph_dir / f'{self.dataset_name}_A_correlation.npy'
             }
         
         graphs = {}
@@ -102,12 +109,12 @@ class TrafficDataset(Dataset):
     def __getitem__(self, idx):
         """
         Returns:
-            x: Input sequence (seq_length, num_nodes)
-            y: Target sequence (pred_horizon, num_nodes)
+            x: Input sequence (seq_length, num_nodes, features)
+            y: Target sequence (pred_horizon, num_nodes, features)
             graphs: Dictionary of adjacency matrices
         """
-        x = torch.FloatTensor(self.X[idx])
-        y_target = torch.FloatTensor(self.y[idx])
+        x = torch.FloatTensor(self.X[idx]).unsqueeze(-1)  # Add feature dimension
+        y_target = torch.FloatTensor(self.y[idx]).unsqueeze(-1)  # Add feature dimension
         
         return x, y_target, self.graphs
 
