@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRAF-GNN | AI Traffic Predictor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: #8b8b9e;
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.4);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 4px;
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--accent) 0%, #a855f7 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 8px 32px var(--accent-glow);
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tagline {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, var(--accent) 0%, #a855f7 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Sections */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .card-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent) 0%, #a855f7 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        /* Map */
+        .map-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .map-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .map-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        #map,
+        #routeMap {
+            height: 450px;
+            width: 100%;
+            background: #1a1a2e;
+        }
+
+        .map-legend {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.light {
+            background: var(--success);
+        }
+
+        .legend-dot.moderate {
+            background: var(--warning);
+        }
+
+        .legend-dot.heavy {
+            background: var(--danger);
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-big {
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+
+        .stat-big.green {
+            color: var(--success);
+        }
+
+        .stat-big.yellow {
+            color: var(--warning);
+        }
+
+        .stat-big.red {
+            color: var(--danger);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        select,
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--accent) 0%, #a855f7 100%);
+            color: white;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--accent-glow);
+        }
+
+        /* Route Section */
+        .route-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .route-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Route Summary */
+        .route-summary {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .route-status {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            text-transform: capitalize;
+        }
+
+        .route-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .route-stat {
+            text-align: center;
+        }
+
+        .route-stat-value {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .route-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Route Steps */
+        .route-steps {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .route-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .route-step:last-child {
+            border-bottom: none;
+        }
+
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .step-dot.light {
+            background: var(--success);
+        }
+
+        .step-dot.moderate {
+            background: var(--warning);
+        }
+
+        .step-dot.heavy {
+            background: var(--danger);
+        }
+
+        .step-info {
+            flex: 1;
+        }
+
+        .step-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .step-speed {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Prediction Cards */
+        .predictions-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .prediction-card {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+            border-top: 3px solid transparent;
+        }
+
+        .prediction-card.light {
+            border-top-color: var(--success);
+        }
+
+        .prediction-card.moderate {
+            border-top-color: var(--warning);
+        }
+
+        .prediction-card.heavy {
+            border-top-color: var(--danger);
+        }
+
+        .horizon-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .speed-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin: 6px 0;
+        }
+
+        .prediction-card.light .speed-value {
+            color: var(--success);
+        }
+
+        .prediction-card.moderate .speed-value {
+            color: var(--warning);
+        }
+
+        .prediction-card.heavy .speed-value {
+            color: var(--danger);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.light {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .status-badge.moderate {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .status-badge.heavy {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+        }
+
+        /* Leaflet Popup */
+        .leaflet-popup-content-wrapper {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .leaflet-popup-tip {
+            background: var(--bg-secondary);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-gradient"></div>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">🚦</div>
+                <h1>TRAF-GNN</h1>
+            </div>
+            <p class="tagline">AI-Powered Traffic Prediction for Los Angeles</p>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('map')">🗺️ Traffic Map</div>
+            <div class="tab" onclick="switchTab('route')">🛣️ Route</div>
+            <div class="tab" onclick="switchTab('predict')">🔮 Predict</div>
+        </div>
+
+        <!-- TRAFFIC MAP SECTION -->
+        <div class="section active" id="mapSection">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-big green" id="lightCount">-</div>
+                    <div class="stat-label">🟢 Light</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-big yellow" id="moderateCount">-</div>
+                    <div class="stat-label">🟡 Moderate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-big red" id="heavyCount">-</div>
+                    <div class="stat-label">🔴 Heavy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-big" id="avgSpeed">-</div>
+                    <div class="stat-label">Avg mph</div>
+                </div>
+            </div>
+
+            <div class="map-container">
+                <div class="map-header">
+                    <div class="map-title">🗺️ Los Angeles Freeway Network</div>
+                    <button class="btn" style="width:auto;padding:8px 16px;font-size:0.8rem"
+                        onclick="updateMapTraffic()">Refresh</button>
+                </div>
+                <div id="map"></div>
+                <div class="map-legend">
+                    <div class="legend-item">
+                        <div class="legend-dot light"></div><span>>45 mph</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot moderate"></div><span>30-45 mph</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot heavy"></div><span>
+                            <30 mph</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROUTE SECTION -->
+        <div class="section" id="routeSection">
+            <div class="route-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">🛣️</div>
+                        <span class="card-title">Plan Route</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>📍 Start Point</label>
+                        <select id="startSensor">
+                            <option value="">Select start...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>🏁 Destination</label>
+                        <select id="endSensor">
+                            <option value="">Select destination...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>🕐 Departure Time</label>
+                        <input type="datetime-local" id="routeTime">
+                    </div>
+
+                    <button class="btn" onclick="getRoute()">🚗 Get Route Traffic</button>
+
+                    <!-- Route Summary -->
+                    <div class="route-summary" id="routeSummary" style="display:none; margin-top:16px;">
+                        <div class="route-status" id="routeStatus">—</div>
+                        <div class="route-stats">
+                            <div class="route-stat">
+                                <div class="route-stat-value" id="routeDistance">—</div>
+                                <div class="route-stat-label">miles</div>
+                            </div>
+                            <div class="route-stat">
+                                <div class="route-stat-value" id="routeTime2">—</div>
+                                <div class="route-stat-label">min</div>
+                            </div>
+                            <div class="route-stat">
+                                <div class="route-stat-value" id="routeAvgSpeed">—</div>
+                                <div class="route-stat-label">avg mph</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Route Steps -->
+                    <div class="route-steps" id="routeSteps" style="margin-top:12px;"></div>
+                </div>
+
+                <div class="map-container">
+                    <div class="map-header">
+                        <div class="map-title">🛣️ Route Traffic</div>
+                    </div>
+                    <div id="routeMap"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PREDICT SECTION -->
+        <div class="section" id="predictSection">
+            <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:20px;">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">📍</div>
+                        <span class="card-title">Location & Time</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Freeway</label>
+                        <select id="freeway" onchange="updateSensors()">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Sensor</label>
+                        <select id="sensor">
+                            <option value="">Select freeway first</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Date & Time</label>
+                        <input type="datetime-local" id="timestamp">
+                    </div>
+
+                    <button class="btn" onclick="predict()">🔮 Predict</button>
+                </div>
+
+                <div class="card" id="resultsCard">
+                    <div class="card-header">
+                        <div class="card-icon">🎯</div>
+                        <span class="card-title">Prediction Results</span>
+                    </div>
+                    <div id="resultsContent" style="text-align:center;padding:40px;color:var(--text-secondary);">
+                        <div style="font-size:3rem;margin-bottom:10px;">🗺️</div>
+                        <p>Select a location to see predictions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>TRAF-GNN v1.0 • <a href="https://github.com/V4RSH1TH-R3DDY/Transport_Systems">GitHub</a></p>
+        </footer>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        let map, routeMap, sensors = [], markers = [], routeMarkers = [], routeLine = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initMaps();
+            loadData();
+            setDefaultTime();
+        });
+
+        function setDefaultTime() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            const timeStr = now.toISOString().slice(0, 16);
+            document.getElementById('timestamp').value = timeStr;
+            document.getElementById('routeTime').value = timeStr;
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach((t, i) => {
+                t.classList.toggle('active',
+                    (tab === 'map' && i === 0) ||
+                    (tab === 'route' && i === 1) ||
+                    (tab === 'predict' && i === 2)
+                );
+            });
+
+            document.getElementById('mapSection').classList.toggle('active', tab === 'map');
+            document.getElementById('routeSection').classList.toggle('active', tab === 'route');
+            document.getElementById('predictSection').classList.toggle('active', tab === 'predict');
+
+            setTimeout(() => {
+                if (tab === 'map') map.invalidateSize();
+                if (tab === 'route') routeMap.invalidateSize();
+            }, 100);
+        }
+
+        function initMaps() {
+            // Traffic map
+            map = L.map('map', { center: [34.0, -118.25], zoom: 10 });
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© CartoDB'
+            }).addTo(map);
+
+            // Route map
+            routeMap = L.map('routeMap', { center: [34.0, -118.25], zoom: 10 });
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© CartoDB'
+            }).addTo(routeMap);
+        }
+
+        async function loadData() {
+            try {
+                const [fwRes, sensorRes] = await Promise.all([
+                    fetch(`${API_URL}/freeways`),
+                    fetch(`${API_URL}/sensors`)
+                ]);
+
+                const fwData = await fwRes.json();
+                sensors = (await sensorRes.json()).sensors;
+
+                // Populate freeway dropdown
+                const select = document.getElementById('freeway');
+                select.innerHTML = '<option value="">Select freeway...</option>';
+                fwData.freeways.forEach(fw => {
+                    select.innerHTML += `<option value="${fw.name}">${fw.name}</option>`;
+                });
+
+                // Populate route dropdowns
+                const startSelect = document.getElementById('startSensor');
+                const endSelect = document.getElementById('endSensor');
+                startSelect.innerHTML = '<option value="">Select start...</option>';
+                endSelect.innerHTML = '<option value="">Select destination...</option>';
+                sensors.forEach(s => {
+                    startSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                    endSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                });
+
+                updateMapTraffic();
+            } catch (e) {
+                console.error('API Error:', e);
+            }
+        }
+
+        async function updateMapTraffic() {
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            let light = 0, moderate = 0, heavy = 0, totalSpeed = 0;
+
+            try {
+                const res = await fetch(`${API_URL}/predict/batch`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sensor_ids: sensors.map(s => s.id),
+                        timestamp: new Date().toISOString()
+                    })
+                });
+
+                const data = await res.json();
+
+                data.results.forEach(result => {
+                    const sensor = result.sensor;
+                    const pred = result.predictions[0];
+
+                    const color = pred.status === 'light' ? '#10b981' :
+                        pred.status === 'moderate' ? '#f59e0b' : '#ef4444';
+
+                    if (pred.status === 'light') light++;
+                    else if (pred.status === 'moderate') moderate++;
+                    else heavy++;
+                    totalSpeed += pred.speed_mph;
+
+                    const marker = L.circleMarker([sensor.lat, sensor.lon], {
+                        radius: 7, fillColor: color, color: '#fff',
+                        weight: 1, opacity: 0.8, fillOpacity: 0.8
+                    }).addTo(map);
+
+                    marker.bindPopup(`<b>${sensor.name}</b><br>${pred.speed_mph} mph<br><span style="color:${color}">${pred.status}</span>`);
+                    markers.push(marker);
+                });
+
+                document.getElementById('lightCount').textContent = light;
+                document.getElementById('moderateCount').textContent = moderate;
+                document.getElementById('heavyCount').textContent = heavy;
+                document.getElementById('avgSpeed').textContent = Math.round(totalSpeed / sensors.length);
+            } catch (e) {
+                console.error('Failed to load traffic:', e);
+            }
+        }
+
+        async function getRoute() {
+            const startId = document.getElementById('startSensor').value;
+            const endId = document.getElementById('endSensor').value;
+            const timestamp = document.getElementById('routeTime').value;
+
+            if (!startId || !endId) { alert('Select start and destination'); return; }
+
+            try {
+                const res = await fetch(`${API_URL}/route`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        start_sensor_id: parseInt(startId),
+                        end_sensor_id: parseInt(endId),
+                        timestamp: timestamp
+                    })
+                });
+
+                const data = await res.json();
+                displayRoute(data);
+            } catch (e) {
+                console.error('Route failed:', e);
+                alert('Failed to get route');
+            }
+        }
+
+        function displayRoute(data) {
+            // Clear previous route
+            routeMarkers.forEach(m => routeMap.removeLayer(m));
+            routeMarkers = [];
+            if (routeLine) routeMap.removeLayer(routeLine);
+
+            // Show summary
+            document.getElementById('routeSummary').style.display = 'block';
+            document.getElementById('routeStatus').textContent = data.summary.status + ' route';
+            document.getElementById('routeStatus').style.color = data.summary.color;
+            document.getElementById('routeDistance').textContent = data.summary.total_distance_miles;
+            document.getElementById('routeTime2').textContent = data.summary.estimated_time_minutes;
+            document.getElementById('routeAvgSpeed').textContent = data.summary.average_speed_mph;
+
+            // Draw route line
+            const latlngs = data.route.map(r => [r.sensor.lat, r.sensor.lon]);
+            routeLine = L.polyline(latlngs, { color: data.summary.color, weight: 4 }).addTo(routeMap);
+
+            // Add markers
+            data.route.forEach((r, i) => {
+                const color = r.prediction.color;
+                const isEndpoint = i === 0 || i === data.route.length - 1;
+
+                const marker = L.circleMarker([r.sensor.lat, r.sensor.lon], {
+                    radius: isEndpoint ? 10 : 6,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: isEndpoint ? 2 : 1,
+                    fillOpacity: 0.9
+                }).addTo(routeMap);
+
+                marker.bindPopup(`<b>${r.sensor.name}</b><br>${r.prediction.speed_mph} mph`);
+                routeMarkers.push(marker);
+            });
+
+            // Fit bounds
+            routeMap.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+
+            // Show steps
+            const stepsHtml = data.route.map(r => `
+                <div class="route-step">
+                    <div class="step-dot ${r.prediction.status}"></div>
+                    <div class="step-info">
+                        <div class="step-name">${r.sensor.name}</div>
+                        <div class="step-speed">${r.prediction.speed_mph} mph • ${r.prediction.status}</div>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('routeSteps').innerHTML = stepsHtml;
+        }
+
+        function updateSensors() {
+            const freeway = document.getElementById('freeway').value;
+            const sensorSelect = document.getElementById('sensor');
+
+            if (!freeway) {
+                sensorSelect.innerHTML = '<option value="">Select freeway first</option>';
+                return;
+            }
+
+            const filtered = sensors.filter(s => s.freeway === freeway);
+            sensorSelect.innerHTML = '<option value="">Select sensor...</option>';
+            filtered.forEach(s => {
+                sensorSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+            });
+        }
+
+        async function predict() {
+            const sensorId = document.getElementById('sensor').value;
+            const timestamp = document.getElementById('timestamp').value;
+
+            if (!sensorId) { alert('Select a sensor'); return; }
+
+            try {
+                const res = await fetch(`${API_URL}/predict`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sensor_id: parseInt(sensorId), timestamp })
+                });
+
+                const data = await res.json();
+
+                let html = `
+                    <div style="text-align:left;margin-bottom:12px;">
+                        <h3 style="font-size:1rem;">${data.sensor.name}</h3>
+                        <p style="color:var(--text-secondary);font-size:0.8rem;">${data.sensor.freeway}</p>
+                    </div>
+                    <div class="predictions-grid">
+                `;
+
+                data.predictions.forEach(p => {
+                    html += `
+                        <div class="prediction-card ${p.status}">
+                            <div class="horizon-label">+${p.horizon}</div>
+                            <div class="speed-value">${p.speed_mph}</div>
+                            <span class="status-badge ${p.status}">${p.status}</span>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+                document.getElementById('resultsContent').innerHTML = html;
+            } catch (e) {
+                alert('Prediction failed');
+            }
+        }
+    </script>
+</body>
+
+</html>
