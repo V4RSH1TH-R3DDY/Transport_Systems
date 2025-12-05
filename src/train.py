@@ -322,6 +322,7 @@ def main():
     parser.add_argument('--batch-size', type=int, help='Batch size')
     parser.add_argument('--learning-rate', type=float, help='Learning rate')
     parser.add_argument('--hidden-dim', type=int, help='Hidden dimension size')
+    parser.add_argument('--num-gnn-layers', type=int, help='Number of GNN layers')
     parser.add_argument('--use-demo-graphs', action='store_true', help='Use demo graphs')
     
     args = parser.parse_args()
@@ -341,6 +342,8 @@ def main():
         config['training']['learning_rate'] = args.learning_rate
     if args.hidden_dim:
         config['model']['hidden_dim'] = args.hidden_dim
+    if args.num_gnn_layers:
+        config['model']['num_gnn_layers'] = args.num_gnn_layers
     if args.use_demo_graphs:
         config['data']['use_demo_graphs'] = True
     

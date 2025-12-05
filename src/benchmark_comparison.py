@@ -67,11 +67,11 @@ BASELINE_RESULTS = {
         '60min': {'MAE': 3.49, 'RMSE': 7.23, 'MAPE': 9.87},
     },
     
-    # TRAF-GNN (Our model - High Capacity hidden_dim=128, Epoch 4)
+    # TRAF-GNN (Our model - 2-layer, hidden_dim=128, 50 epochs)
     'TRAF-GNN (Ours)': {
-        '15min': {'MAE': 3.43, 'RMSE': 7.43, 'MAPE': 7.98},
-        '30min': {'MAE': None, 'RMSE': None, 'MAPE': None},  # Need to train for longer horizon
-        '60min': {'MAE': None, 'RMSE': None, 'MAPE': None},  # Need to train for longer horizon
+        '15min': {'MAE': 3.45, 'RMSE': 7.31, 'MAPE': 7.87},
+        '30min': {'MAE': None, 'RMSE': None, 'MAPE': None},  # Need longer horizon training
+        '60min': {'MAE': None, 'RMSE': None, 'MAPE': None},  # Need longer horizon training
     },
 }
 
