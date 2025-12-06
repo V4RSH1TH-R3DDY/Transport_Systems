@@ -30,16 +30,18 @@ ENV/
 .ipynb_checkpoints
 *.ipynb_checkpoints/
 
-# Data files (large datasets)
+# Data files (large training datasets - not needed for deployment)
 data/raw/*.csv
 data/raw/*.h5
 data/raw/*.hdf5
 data/raw/*.npz
 data/raw/*.pkl
 data/raw/*.npy
-data/processed/*.npy
-data/processed/*.npz
-data/processed/*.h5
+# Training data - too large for git
+data/processed/*_train.npy
+data/processed/*_val.npy
+# Keep test data, stats, and adjacency for inference
+# !data/processed/*_test.npy  # Uncomment if using Git LFS
 graphs/*.npy
 graphs/*.pt
 
@@ -48,11 +50,11 @@ graphs/*.pt
 !data/processed/README.md
 !graphs/README.md
 
-# Model checkpoints
-checkpoints/
-*.pth
-*.pt
-*.ckpt
+# Model checkpoints (use Git LFS for these)
+# Uncomment if NOT using Git LFS:
+# checkpoints/*.pth
+# checkpoints/*.pt
+# checkpoints/*.ckpt
 
 # Logs
 logs/

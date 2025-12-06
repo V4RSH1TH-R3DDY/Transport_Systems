@@ -1,0 +1,21 @@
+{
+  "model": "TRAF-GNN",
+  "dataset": "METR-LA",
+  "metrics": {
+    "15min": {
+      "MAE": 3.45,
+      "RMSE": 7.31,
+      "MAPE": 7.87
+    }
+  },
+  "comparison": {
+    "vs_DCRNN": {
+      "MAE_diff": 0.6800000000000002,
+      "MAPE_diff": 0.5700000000000003
+    },
+    "vs_STGCN": {
+      "MAE_diff": 0.5700000000000003,
+      "MAPE_diff": 0.27000000000000046
+    }
+  }
+}

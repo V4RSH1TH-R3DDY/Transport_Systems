@@ -1,0 +1,42 @@
+{
+  "model": {
+    "hidden_dim": 128,
+    "num_gnn_layers": 3,
+    "num_temporal_layers": 2,
+    "dropout": 0.3,
+    "in_features": 1
+  },
+  "data": {
+    "dataset": "metr-la",
+    "seq_length": 12,
+    "pred_horizon": 3,
+    "batch_size": 32,
+    "num_workers": 0,
+    "use_demo_graphs": true
+  },
+  "training": {
+    "num_epochs": 50,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "grad_clip": 5.0,
+    "patience": 15,
+    "min_epochs": 10
+  },
+  "scheduler": {
+    "type": "ReduceLROnPlateau",
+    "patience": 5,
+    "factor": 0.5,
+    "min_lr": 1e-06
+  },
+  "paths": {
+    "data_dir": "data/processed",
+    "graph_dir": "graphs",
+    "checkpoint_dir": "checkpoints",
+    "log_dir": "logs"
+  },
+  "experiment": {
+    "name": "traf_gnn_baseline",
+    "seed": 42,
+    "device": "auto"
+  }
+}
